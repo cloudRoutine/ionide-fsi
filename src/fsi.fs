@@ -21,7 +21,7 @@ module FsiService =
     let private handle (data : obj) =
         if data <> null then
             let response = data.ToString().Replace("\\","\\\\")
-            fsiEditor |> Option.iter (fun ed ->
+            fsiEditor |> Option.iter( fun ed ->
                 ed.insertText response |> ignore
                 )
 
@@ -116,7 +116,7 @@ module FsiService =
 
         if Process.isWin () |> not && fsipath = "C:/Program Files (x86)/Microsoft SDKs/F#/4.0/Framework/v4.0/Fsi.exe" then
             Globals.atom.config.set("ionide-fsi.FsiPath", "fsharpi")
-            fsipath <- "fsharpi" 
+            fsipath <- "fsharpi"
 
 
 

@@ -41,7 +41,28 @@ let releaseNotesData =
 
 let release = List.head releaseNotesData
 
-let apmTool = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) </> "atom" </> "bin" </> "apm.cmd"
+let run cmd args dir =
+    if execProcess( fun info ->
+        info.FileName <- cmd
+        if not( String.IsNullOrWhiteSpace dir) then
+            info.WorkingDirectory <- dir
+        info.Arguments <- args
+    ) System.TimeSpan.MaxValue = false then
+        traceError <| sprintf "Error while running '%s' with args: %s" cmd args
+
+let apmTool =
+    #if MONO
+        "apm"
+    #else
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) </> "atom" </> "bin" </> "apm.cmd"
+    #endif
+
+let atomTool =
+    #if MONO
+        "atom"
+    #else
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) </> "atom" </> "bin" </> "atom.cmd"
+    #endif
 
 // --------------------------------------------------------------------------------------
 // Build the Generator project and run it
@@ -72,15 +93,7 @@ Target "RunScript" (fun () ->
 #endif
 
 Target "InstallDependencies" (fun _ ->
-    let args = "install"
-
-    let srcDir = "release"
-    let result =
-        ExecProcess (fun info ->
-            info.FileName <- apmTool
-            info.WorkingDirectory <- srcDir
-            info.Arguments <- args) System.TimeSpan.MaxValue
-    if result <> 0 then failwithf "Error during running apm with %s" args
+    run "install" "release"
 )
 
 Target "TagDevelopBranch" (fun _ ->
@@ -114,14 +127,9 @@ Target "PushToMaster" (fun _ ->
     Branches.push tempReleaseDir
 )
 
-Target "Release" (fun _ ->
+Target "Release"( fun _ ->
     let args = sprintf "publish %s" release.NugetVersion
-    let result =
-        ExecProcess (fun info ->
-            info.FileName <- apmTool
-            info.WorkingDirectory <- tempReleaseDir
-            info.Arguments <- args) System.TimeSpan.MaxValue
-    if result <> 0 then failwithf "Error during running apm with %s" args
+    run args tempReleaseDir
     DeleteDir "temp/release"
 )
 
